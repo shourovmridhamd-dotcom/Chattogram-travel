@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>চট্টগ্রাম ভ্রমণ ডায়েরি ও শেয়ারিং</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 10px;
+        }
+        header {
+            text-align: center;
+            padding: 15px 0;
+            background: #006a4e;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        #map {
+            height: 350px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-container, .places-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.2rem;
+            color: #006a4e;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        button {
+            background-color: #006a4e;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #004d38;
+        }
+        .place-card {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .place-card:last-child {
+            border-bottom: none;
+        }
+        .place-card img {
+            width: 100%;
+            max-height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h3>চট্টগ্রাম ভ্রমণ ডায়েরি ও শেয়ারিং</h3>
+    </header>
+
+    <div id="map"></div>
+
+    <div class="form-container">
+        <h2>➕ নতুন স্থান যোগ করুন</h2>
+        <form id="travelForm">
+            <input type="text" id="placeName" placeholder="স্থানের নাম (যেমন: নেভাল বীচ)" required>
+            <input type="text" id="coords" placeholder="অক্ষাংশ, দ্রাঘিমাংশ (যেমন: 22.2359, 91.7905)" required>
+            <input type="url" id="imageUrl" placeholder="ছবি লিংক (Image URL)">
+            <textarea id="description" placeholder="আপনার অনুভূতি বা অভিজ্ঞতা..."></textarea>
+            <button type="submit">ম্যাপে পোস্ট করুন</button>
+        </form>
+    </div>
+
+    <div class="places-container">
+        <h2>সবাই যে জায়গাগুলো যোগ করেছে:</h2>
+        <div id="placesList"></div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // চট্টগ্রাম কেন্দ্র করে ম্যাপ শুরু
+        const map = L.map('map').setView([22.3569, 91.7832], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const initialPlaces = [
+            {
+                name: "পতেঙ্গা সি বিচ",
+                lat: 22.2359,
+                lng: 91.7905,
+                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500",
+                desc: "সূর্যাস্ত দেখার সুন্দর জায়গা।"
+            }
+        ];
+
+        function addMarker(place) {
+            const marker = L.marker([place.lat, place.lng]).addTo(map);
+            let popupContent = `<b>${place.name}</b><br>${place.desc}`;
+            if(place.image) {
+                popupContent += `<br><img src="${place.image}" style="width:100px; border-radius:5px; margin-top:5px;">`;
+            }
+            marker.bindPopup(popupContent);
+        }
+
+        function displayPlaceInList(place) {
+            const list = document.getElementById('placesList');
+            const card = document.createElement('div');
+            card.className = 'place-card';
+            card.innerHTML = `
+                <h4>${place.name}</h4>
+                <p><small>কোঅর্ডিনেট: ${place.lat}, ${place.lng}</small></p>
+                <p>${place.desc}</p>
+                ${place.image ? `<img src="${place.image}" alt="${place.name}">` : ''}
+            `;
+            list.appendChild(card);
+        }
+
+        initialPlaces.forEach(place => {
+            addMarker(place);
+            displayPlaceInList(place);
+        });
+
+        document.getElementById('travelForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('placeName').value;
+            const coordsInput = document.getElementById('coords').value.split(',');
+            const image = document.getElementById('imageUrl').value;
+            const desc = document.getElementById('description').value;
+
+            if(coordsInput.length === 2) {
+                const lat = parseFloat(coordsInput[0].trim());
+                const lng = parseFloat(coordsInput[1].trim());
+
+                if(!isNaN(lat) && !isNaN(lng)) {
+                    const newPlace = { name, lat, lng, image, desc };
+                    addMarker(newPlace);
+                    displayPlaceInList(newPlace);
+                    map.setView([lat, lng], 13);
+                    this.reset();
+                } else {
+                    alert('সঠিক অক্ষাংশ ও দ্রাঘিমাংশ দিন (যেমন: 22.3569, 91.7832)');
+                }
+            } else {
+                alert('অক্ষাংশ ও দ্রাঘিমাংশ কমা (,) দিয়ে আলাদা করে লিখুন।');
+            }
+        });
+    </script>
+</body>
+</html>
